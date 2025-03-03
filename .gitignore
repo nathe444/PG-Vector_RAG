@@ -1,0 +1,5 @@
+myenv/
+test.pdf
+_pycache_/
+.env
+env/

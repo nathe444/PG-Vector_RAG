@@ -1,0 +1,14 @@
+psycopg2-binary
+pdfplumber
+pandas
+python-docx
+openpyxl
+langchain
+tqdm
+PyPDF2
+pgvector
+langchain-groq
+python-dotenv
+langchain-community
+sentence-transformers
+langchain-postgres
