@@ -1,9 +1,8 @@
+import cohere
 from langchain_postgres import PGVector
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 from format_user_question import format_user_question
 import os
-
 
 load_dotenv()
 
@@ -15,14 +14,19 @@ DB_CONFIG = {
         "port": os.getenv("PORT"),
     }
 
-
-embedding_model = HuggingFaceEmbeddings()
-
+# Initialize Cohere client
+co = cohere.Client(os.getenv("COHERE_API_KEY"))
 
 def get_embedding(text):
-    """Generates an embedding for the query using HuggingFaceEmbeddings."""
-    embedding = embedding_model.embed_documents([text])
-    return embedding[0]
+    """Generates an embedding for the query using Cohere."""
+    response = co.embed(
+        texts=[text], 
+        model="embed-english-v3.0",
+        input_type="search_query",  # Specify input type for search queries
+        embedding_types=["float"]  # Specify float embeddings
+    )
+    # Correctly extract the float embedding
+    return response.embeddings.float[0]
 
 def retrieve_relevant_chunks(user_query, top_k=2):
     """Retrieves the most relevant document chunks."""
@@ -33,7 +37,7 @@ def retrieve_relevant_chunks(user_query, top_k=2):
     connection_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
     vector_store = PGVector(
         connection=connection_string,  # Pass the connection string
-        embeddings=embedding_model,  # Pass the embedding model
+        embeddings=co,  # Pass the Cohere client
         collection_name="collection",  # Specify the collection name
     )
 
@@ -43,5 +47,3 @@ def retrieve_relevant_chunks(user_query, top_k=2):
     responses = results[0].page_content 
 
     return responses
-
-  

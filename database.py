@@ -6,29 +6,36 @@ import os
 load_dotenv()
 
 DB_CONFIG = {
-        "dbname": os.getenv("DBNAME"),
-        "user": os.getenv("USER"),
-        "password": os.getenv("PASSWORD"),
-        "host": os.getenv("HOST"),
-        "port": os.getenv("PORT"),
-    }
+    "dbname": os.getenv("DBNAME"),
+    "user": os.getenv("USER"),
+    "password": os.getenv("PASSWORD"),
+    "host": os.getenv("HOST"),
+    "port": os.getenv("PORT"),
+}
 
 def create_database():
     """Creates the 'rag_db' database if it doesn't exist."""
-    conn = psycopg2.connect(**DB_CONFIG)
-    conn.set_session(autocommit=True)  # Ensure autocommit mode for CREATE DATABASE
-    cur = conn.cursor()
+    # Connect to the default PostgreSQL database
+    default_config = DB_CONFIG.copy()
+    default_config['dbname'] = 'postgres'
+    
+    try:
+        conn = psycopg2.connect(**default_config)
+        conn.set_session(autocommit=True)  # Ensure autocommit mode for CREATE DATABASE
+        cur = conn.cursor()
 
-    # Check if rag_db exists
-    cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'rag_db'")
-    if not cur.fetchone():
-        print("Database 'rag_db' does not exist. Creating it...")
-        cur.execute("CREATE DATABASE rag_db")
+        # Check if rag_db exists
+        cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'rag_db'")
+        if not cur.fetchone():
+            print("Database 'rag_db' does not exist. Creating it...")
+            cur.execute("CREATE DATABASE rag_db")
+            print("Database 'rag_db' created successfully.")
 
-    conn.commit()
-    cur.close()
-    conn.close()
-
+        cur.close()
+        conn.close()
+    except psycopg2.Error as e:
+        print(f"Error creating database: {e}")
+        raise
 
 def create_tables():
     """Creates the necessary database tables."""
@@ -72,7 +79,6 @@ def create_tables():
     cur.close()
     conn.close()
 
-
 def document_exists_in_db(document_path):
     """Checks if the document exists in the database."""
     DB_CONFIG['dbname'] = 'rag_db'  # Switch to the 'rag_db' database
@@ -87,7 +93,6 @@ def document_exists_in_db(document_path):
     conn.close()
 
     return document_id is not None
-
 
 def main():
     create_database()  # Ensure the database exists before creating tables

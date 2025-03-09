@@ -1,10 +1,8 @@
+import cohere
 from langchain_postgres import PGVector
-from langchain_community.embeddings import HuggingFaceEmbeddings
 import psycopg2
 from dotenv import load_dotenv
 import os
-
-
 load_dotenv()
 
 DB_CONFIG = {
@@ -15,12 +13,19 @@ DB_CONFIG = {
         "port": os.getenv("PORT"),
     }
 
-embedding_model = HuggingFaceEmbeddings()
+# Initialize Cohere client
+co = cohere.Client(os.getenv("COHERE_API_KEY"))
 
 def get_embedding(text):
-    """Generates embeddings using HuggingFaceEmbeddings."""
-    embedding = embedding_model.embed_documents([text])
-    return embedding[0]
+    """Generates embeddings using Cohere with search_document input type."""
+    response = co.embed(
+        texts=[text], 
+        model="embed-english-v3.0",
+        input_type="search_document",  # Specify input type for vector database
+        embedding_types=["float"]  # Specify float embeddings
+    )
+    # Correctly extract the float embedding
+    return response.embeddings.float[0]
 
 def embed_chunks():
     """Fetches unembedded chunks, embeds them, and stores embeddings in the database."""
@@ -36,7 +41,7 @@ def embed_chunks():
     connection_string = f"postgresql://{DB_CONFIG['user']}:{DB_CONFIG['password']}@{DB_CONFIG['host']}:{DB_CONFIG['port']}/{DB_CONFIG['dbname']}"
     vector_store = PGVector(
         connection=connection_string,  # Pass the connection string
-        embeddings=embedding_model,  # Pass the embedding model
+        embeddings=co,  # Pass the Cohere client
         collection_name="collection",  # Specify the collection name
     )
 
