@@ -14,7 +14,10 @@ DB_CONFIG = {
 }
 
 def create_database():
-    """Creates the 'rag_db' database if it doesn't exist."""
+    """Creates the database if it doesn't exist."""
+    # Get database name from environment variable
+    database_name = os.getenv("DBNAME", "rag_db")
+    
     # Connect to the default PostgreSQL database
     default_config = DB_CONFIG.copy()
     default_config['dbname'] = 'postgres'
@@ -24,12 +27,12 @@ def create_database():
         conn.set_session(autocommit=True)  # Ensure autocommit mode for CREATE DATABASE
         cur = conn.cursor()
 
-        # Check if rag_db exists
-        cur.execute("SELECT 1 FROM pg_catalog.pg_database WHERE datname = 'rag_db'")
+        # Check if database exists
+        cur.execute(f"SELECT 1 FROM pg_catalog.pg_database WHERE datname = '{database_name}'")
         if not cur.fetchone():
-            print("Database 'rag_db' does not exist. Creating it...")
-            cur.execute("CREATE DATABASE rag_db")
-            print("Database 'rag_db' created successfully.")
+            print(f"Database '{database_name}' does not exist. Creating it...")
+            cur.execute(f"CREATE DATABASE {database_name}")
+            print(f"Database '{database_name}' created successfully.")
 
         cur.close()
         conn.close()
@@ -39,7 +42,7 @@ def create_database():
 
 def create_tables():
     """Creates the necessary database tables."""
-    DB_CONFIG['dbname'] = 'rag_db'  # Switch to the 'rag_db' database
+    DB_CONFIG['dbname'] = os.getenv("DBNAME", "rag_db")  # Switch to the database
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
@@ -81,7 +84,7 @@ def create_tables():
 
 def document_exists_in_db(document_path):
     """Checks if the document exists in the database."""
-    DB_CONFIG['dbname'] = 'rag_db'  # Switch to the 'rag_db' database
+    DB_CONFIG['dbname'] = os.getenv("DBNAME", "rag_db")  # Switch to the database
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
